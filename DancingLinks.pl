@@ -179,7 +179,7 @@ DANCING:
             while ( $ele != $r )
             {
                 remove_col( $ele->{top} );
-                $ele = $ele->{right}
+                $ele = $ele->{right};
             }
 
             $res = dance($head, $answer, $lv+1);
