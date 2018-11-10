@@ -58,9 +58,9 @@ sub create_matrix_nodes
 
     @elements = (0) x $mat_cols;
 
-    for my $r ( 0 .. 0 ) #$mat_rows-1 )
+    for my $r ( 0 .. $mat_rows-1 )
     {
-        elements_to_nodes( $C, $mat->[$r], $mat_cols, 2, 0, 0 );
+        elements_to_nodes( $C, $mat->[$r], $mat_cols, $r+1, 0, 0 );
     }   
 }
 
@@ -260,7 +260,8 @@ sub print_links
     my $head = shift;
     my $tmat = [];
 
-    grep { push @$tmat, [map { "   " } ( 0 .. $#{$mat->[0]} )] } ( 0 .. $#$mat+1 );
+    # rows 多一行列标
+    grep { push @$tmat, [map { "   " } (1 .. $mat_cols)] } (0 .. $mat_rows);
 
     my $vt;
     my $hz;
