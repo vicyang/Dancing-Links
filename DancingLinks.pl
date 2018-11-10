@@ -40,12 +40,11 @@ sub main
 
     print_links( $C->[0] );
 
-    # #$res = dance( $C->[0] , \@answer, 0);
+    $res = dance( $C->[0] , \@answer, 0);
     #print_links( $C->[0] );
 
-    # printf "%s\n", join(",", @answer);
-
-    # printf "result: %d\n", $res;
+    printf "%s\n", join(",", map { $_->{row} } @answer);
+    printf "result: %d\n", $res;
 
     # #清理内存
     # clean_matrix_nodes($C);
@@ -60,7 +59,7 @@ sub create_matrix_nodes
 
     for my $r ( 0 .. $mat_rows-1 )
     {
-        elements_to_nodes( $C, $mat->[$r], $mat_cols, $r+1, 0, 0 );
+        elements_to_nodes( $C, $mat->[$r], $mat_cols, $r, 0, 0 );
     }   
 }
 
@@ -84,7 +83,7 @@ sub elements_to_nodes
             $ele = {
                 val => $n,
                 col => $matc,
-                row => $matr,
+                row => $matr + 1,  #在交叉链中的行位
                 count => undef,
                 left  => undef,
                 right => undef,
