@@ -55,6 +55,7 @@ sub create_matrix_nodes
     my ($mat, $C ) = @_;
     for my $r ( 0 .. $mat_rows-1 )
     {
+        # 按行处理，便于判断邻边元素的 left right 关系
         elements_to_nodes( $C, $mat->[$r], $mat_cols, $r, 0, 0 );
     }   
 }
@@ -67,15 +68,13 @@ sub elements_to_nodes
     our $ele_id;
     my $first;
     my $ele;
-    my $ref;
     my $prev = undef;
     my $col;
-    my $i;
 
-    for ( $i = 0; $i < $cols; $i++ )
+    for my $c ( 0 .. $cols-1 )
     {
-        $col = $i+1;
-        if ( $eles->[$i] == 1 )
+        $col = $c+1;  # C->[0] 用于引入，有效元素从1开始
+        if ( $eles->[$c] == 1 )
         {
             $ele = {
                 val => $ele_id,
