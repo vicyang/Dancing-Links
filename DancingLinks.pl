@@ -53,10 +53,6 @@ sub main
 sub create_matrix_nodes
 {
     my ($mat, $C ) = @_;
-    my @elements;
-
-    @elements = (0) x $mat_cols;
-
     for my $r ( 0 .. $mat_rows-1 )
     {
         elements_to_nodes( $C, $mat->[$r], $mat_cols, $r, 0, 0 );
