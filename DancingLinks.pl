@@ -63,6 +63,7 @@ sub elements_to_nodes
 {
     my ($C, $eles, $cols, $matr, $matc, $n ) = @_;
 
+    # 全局变量，代表每个有效单元的ID
     our $ele_id;
     my $first;
     my $ele;
@@ -77,7 +78,7 @@ sub elements_to_nodes
         if ( $eles->[$i] == 1 )
         {
             $ele = {
-                val => $n,
+                val => $ele_id,
                 col => $matc,
                 row => $matr + 1,  #在交叉链中的行位
                 count => undef,
