@@ -76,7 +76,7 @@ sub elements_to_nodes
         {
             $ele = {
                 val => $ele_id,
-                col => $c,
+                col => $col,
                 row => $matr + 1,  #在交叉链中的行位
                 count => undef,
                 left  => undef,
@@ -170,7 +170,7 @@ DANCING:
         my @count_array;
         my $res = 0;
 
-        printf "Remove col: %d\n", $c->{col};
+        printf "Remove C%d\n", $c->{col};
         remove_col( $c );
 
         while ( $r != $c )
@@ -180,7 +180,7 @@ DANCING:
             while ( $ele != $r )
             {
                 print_links( $head );
-                printf "Remove col: %d\n", $ele->{col};
+                printf "Remove C%d\n", $ele->{col};
                 remove_col( $ele->{top} );
                 $ele = $ele->{right};
             }
@@ -195,16 +195,18 @@ DANCING:
             $ele = $r->{left};
             while ( $ele != $r )
             {
+                print_links( $head );
+                printf "Resume C%d\n", $ele->{col};
                 resume_col( $ele->{top} );
                 $ele = $ele->{left};
-                print_links( $head );
             }
          
             $r = $r->{down};
         }
 
-        resume_col( $c );
         print_links( $head );
+        printf "Resume C%d\n", $c->{col};
+        resume_col( $c );
         return $res;
     }
 
@@ -217,13 +219,12 @@ DANCING:
 
         my $vt = $sel->{down};
         my $hz;
-
         for ( ; $vt != $sel; $vt = $vt->{down} )
         {
             $hz = $vt->{right};
+            printf "Remove R%d\n", $hz->{row};
             for (  ; $hz != $vt; $hz = $hz->{right})
             {
-                printf "Remove row: %d\n", $hz->{row};
                 $hz->{up}{down} = $hz->{down};
                 $hz->{down}{up} = $hz->{up};
                 $hz->{top}{count} --;
@@ -245,9 +246,9 @@ DANCING:
         for ( ; $vt != $sel; $vt = $vt->{down})
         {
             $hz = $vt->{right};
+            printf "Resume R%d\n", $hz->{row};
             for (  ; $hz != $vt; $hz = $hz->{right})
             {
-                printf "Resume row: %d\n", $hz->{row};
                 $hz->{up}{down} = $hz;
                 $hz->{down}{up} = $hz;
                 $hz->{top}{count} ++;
@@ -263,7 +264,7 @@ sub print_links
     my $tmat = [];
 
     # rows 多一行列标
-    grep { push @$tmat, [map { "   " } (1 .. $mat_cols)] } (0 .. $mat_rows);
+    grep { push @$tmat, [map { "   " } (0 .. $mat_cols)] } (0 .. $mat_rows);
 
     my $vt;
     my $hz;
