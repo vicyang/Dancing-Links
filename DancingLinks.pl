@@ -78,7 +78,7 @@ sub elements_to_nodes
         {
             $ele = {
                 val => $ele_id,
-                col => $matc,
+                col => $col,
                 row => $matr + 1,  #在交叉链中的行位
                 count => undef,
                 left  => undef,
