@@ -25,33 +25,39 @@ BEGIN
     our $WinID;
     our $HEIGHT = 600;
     our $WIDTH  = 1000;
-    our @color_table = (
-            [0.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.5, 0.8, 1.0],
-            [0.0, 1.0, 1.0], [0.5, 1.0, 0.5], [1.0, 0.5, 0.5],
-            [0.0, 0.5, 1.0], [0.3, 0.5, 0.8], [0.5, 0.3, 0.8],
-            [0.8, 0.5, 0.3],
+    our %color_table = (
+           black  => [0.0, 0.0, 0.0],
+           green  => [0.8, 1.0, 0.4],
+           blue   => [0.5, 0.8, 1.0],
+           voilet => [0.6, 0.4, 0.9], 
+           orange => [1.0, 0.6, 0.0]
         );
+
+    our $PT_SIZE = 16;
+    our $PT_SPACE = int($PT_SIZE * 1.3);
+
     #our $C = [ map { {} } ( 0.. $mat_cols ) ];
 }
 
-# our $mat = [
-#         [0,0,1,0,1,1,0],
-#         [1,0,0,1,0,0,1],
-#         [0,1,1,0,0,1,0],
-#         [1,0,0,1,0,0,0],
-#         [0,1,0,0,0,0,1],
-#         [0,0,0,1,1,0,1]
-#     ];
-# our $mat_rows = scalar( @$mat );
-# our $mat_cols = scalar( @{$mat->[0]} );
+our $mat = [
+        [0,0,1,0,1,1,0],
+        [1,0,0,1,0,0,1],
+        [0,1,1,0,0,1,0],
+        [1,0,0,1,0,0,0],
+        [0,1,0,0,0,0,1],
+        [0,0,0,1,1,0,1]
+    ];
+our $mat_rows = scalar( @$mat );
+our $mat_cols = scalar( @{$mat->[0]} );
 
-our $mat;
-our $mat_rows = 20;
-our $mat_cols = 20;
-make_mat( \$mat, $mat_rows, $mat_cols );
+# our $mat;
+# our $mat_rows = 20;
+# our $mat_cols = 20;
+# make_mat( \$mat, $mat_rows, $mat_cols );
 DancingLinks::init( $mat, $mat_rows, $mat_cols  );
 
-our $delay :shared;
+our $T1 :shared;
+our $T2 :shared;
 our @answer :shared; # = map { {} } (1..20);
 our $C = clone( $DancingLinks::C );
 our $SHARE :shared;
@@ -60,7 +66,8 @@ clone_DLX( $C->[0], $SHARE );
 #grep { printf "%s\n", join( "", @$_ ) } @$SHARE;
 
 #exit;
-$delay = 0.05;
+$T1 = 0.05;
+$T2 = 2.0;
 DancingLinks::print_links( $C->[0] );
 our $th = threads->create( \&dance, $C->[0], \@answer, 0 );
 $th->detach();
@@ -91,11 +98,11 @@ DANCING:
         
         for ( ; $c != $head; $c = $c->{right} )
         {
-            $SHARE->[0][ $c->{col} ] = 1;
+            $SHARE->[0][ $c->{col} ] = "green";
             $vt = $c->{down};
             for ( ; $vt != $c; $vt = $vt->{down} )
             {
-                $SHARE->[$vt->{row}][$vt->{col}] = 1;
+                $SHARE->[$vt->{row}][$vt->{col}] = "green";
             }
         }
     }
@@ -125,8 +132,8 @@ DANCING:
         my @count_array;
         my $res = 0;
         printf "Remove: %d\n", $c->{col};
-        remove_col( $c );
-        #sleep 0.5;
+        remove_col( $c, "blue" );
+        sleep $T2;
 
         while ( $r != $c )
         {
@@ -134,9 +141,12 @@ DANCING:
             while ( $ele != $r )
             {
                 printf "Remove: %d\n", $ele->{col};
-                remove_col( $ele->{top} );
+                remove_col( $ele->{top}, "orange" );
                 $ele = $ele->{right};
+                sleep $T2;
             }
+
+            # Clean 
 
             $res = dance($head, $answer, $lv+1);
             if ( $res == 1)
@@ -145,26 +155,27 @@ DANCING:
 
                 my $tc = $r;
                 do {
-                    $SHARE->[ $tc->{row} ][ $tc->{col} ] = 5;
+                    $SHARE->[ $tc->{row} ][ $tc->{col} ] = "green";
                     $tc = $tc->{right};
                 } until ( $tc == $r );
 
                 return 1;
             }
 
-            sleep $delay;
+            sleep 1.0;
+            sleep $T1;
             $ele = $r->{left};
             while ( $ele != $r )
             {
                 printf "Resume: %d\n", $ele->{col};
-                resume_col( $ele->{top} );
+                resume_col( $ele->{top}, "green" );
                 $ele = $ele->{left};
             }
          
             $r = $r->{down};
         }
 
-        resume_col( $c );
+        resume_col( $c, "green" );
         printf "Resume: %d\n", $c->{col};
         return $res;
     }
@@ -172,11 +183,11 @@ DANCING:
     sub remove_col
     {
         our $SHARE;
-        my ( $sel ) = @_;
+        my ( $sel, $color ) = @_;
 
         #printf "Remove: %d\n", $sel->{col};
-        $SHARE->[ $sel->{row} ][ $sel->{col} ] = 6;
-        sleep $delay;
+        $SHARE->[ $sel->{row} ][ $sel->{col} ] = $color;
+        sleep $T1;
         $sel->{left}{right} = $sel->{right};
         $sel->{right}{left} = $sel->{left};
 
@@ -185,13 +196,13 @@ DANCING:
 
         for ( ; $vt != $sel; $vt = $vt->{down} )
         {
-            $SHARE->[ $vt->{row} ][ $vt->{col} ] = 2;
-            sleep $delay;
+            $SHARE->[ $vt->{row} ][ $vt->{col} ] = $color;
+            sleep $T1;
             $hz = $vt->{right};
             for (  ; $hz != $vt; $hz = $hz->{right})
             {
-                $SHARE->[ $hz->{row} ][ $hz->{col} ] = 2;
-                sleep $delay;
+                $SHARE->[ $hz->{row} ][ $hz->{col} ] = $color;
+                sleep $T1;
                 $hz->{up}{down} = $hz->{down};
                 $hz->{down}{up} = $hz->{up};
                 $hz->{top}{count} --;
@@ -200,30 +211,29 @@ DANCING:
             $hz->{top}{count} --;
         }
 
-        #sleep $delay;
+        #sleep $T1;
     }
 
     sub resume_col
     {
-        my ( $sel ) = @_;
+        my ( $sel, $color ) = @_;
         
         $sel->{left}{right} = $sel;
         $sel->{right}{left} = $sel;
-        #printf "Resume: %d\n", $sel->{col};
-        $SHARE->[ $sel->{row} ][ $sel->{col} ] = 1;
-        sleep $delay;
+        $SHARE->[ $sel->{row} ][ $sel->{col} ] = $color;
+        sleep $T1;
         my $vt = $sel->{down};
         my $hz;
 
         for ( ; $vt != $sel; $vt = $vt->{down})
         {
             $hz = $vt->{right};
-            $SHARE->[ $vt->{row} ][ $vt->{col} ] = 1;
-            sleep $delay;
+            $SHARE->[ $vt->{row} ][ $vt->{col} ] = $color;
+            sleep $T1;
             for (  ; $hz != $vt; $hz = $hz->{right})
             {
-                $SHARE->[ $hz->{row} ][ $hz->{col} ] = 1;
-                sleep $delay;
+                $SHARE->[ $hz->{row} ][ $hz->{col} ] = $color;
+                sleep $T1;
                 $hz->{up}{down} = $hz;
                 $hz->{down}{up} = $hz;
                 $hz->{top}{count} ++;
@@ -235,21 +245,21 @@ DANCING:
 
 sub display
 {
-    our ($C, @color_table, $WinID, $SHARE);
+    our ($C, %color_table, $WinID, $SHARE, $PT_SIZE, $PT_SPACE);
     glColor3f(1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    print_color_table();
+    #print_color_table();
 
     glBegin(GL_POINTS);
     for my $r ( 0 .. $mat_rows )
     {
         for my $c ( 0 .. $mat_cols )
         {
-            if ( $SHARE->[$r][$c] != 0 )
+            if ( $SHARE->[$r][$c] ne 0 )
             {
-                glColor3f( @{$color_table[ $SHARE->[$r][$c] ]} );
-                glVertex3f( $c * 10.0, -$r * 10.0, 0.0 );
+                glColor3f( @{ $color_table{ $SHARE->[$r][$c] } } );
+                glVertex3f( $c * $PT_SPACE, -$r * $PT_SPACE, 0.0 );
             }
         }
     }
@@ -293,8 +303,9 @@ sub idle
 
 sub init
 {
+    our $PT_SIZE;
     glClearColor(0.0, 0.0, 0.0, 0.0);
-    glPointSize(8.0);
+    glPointSize( $PT_SIZE );
 }
 
 sub reshape
