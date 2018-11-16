@@ -204,7 +204,7 @@ DANCING:
             $r = $r->{down};
         }
 
-        print_links( $head );
+        #print_links( $head );
         printf "Resume C%d\n", $c->{col};
         resume_col( $c );
         return $res;
