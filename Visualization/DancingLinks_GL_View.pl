@@ -46,7 +46,7 @@ BEGIN
 # our $mat_cols = scalar( @{$mat->[0]} );
 
 our $mat;
-our $mat_rows = 30;
+our $mat_rows = 20;
 our $mat_cols = 20;
 make_mat( \$mat, $mat_rows, $mat_cols );
 DancingLinks::init( $mat, $mat_rows, $mat_cols  );
@@ -143,6 +143,7 @@ DANCING:
                 return 1;
             }
 
+            sleep 0.1;
             $ele = $r->{left};
             while ( $ele != $r )
             {
@@ -166,7 +167,7 @@ DANCING:
 
         #printf "Remove: %d\n", $sel->{col};
         $SHARE->[ $sel->{row} ][ $sel->{col} ] = 5;
-        sleep 0.1;
+        sleep 0.01;
         $sel->{left}{right} = $sel->{right};
         $sel->{right}{left} = $sel->{left};
 
@@ -176,20 +177,21 @@ DANCING:
         for ( ; $vt != $sel; $vt = $vt->{down} )
         {
             $hz = $vt->{right};
-            #$SHARE->[ $hz->{row} ][ $hz->{col} ] = 0;
+            $SHARE->[ $vt->{row} ][ $vt->{col} ] = 5;
+            sleep 0.01;
             for (  ; $hz != $vt; $hz = $hz->{right})
             {
-                #$SHARE->[ $hz->{row} ][ $hz->{col} ] = 0;
-                #sleep 0.01;
+                $SHARE->[ $hz->{row} ][ $hz->{col} ] = 5;
+                sleep 0.01;
                 $hz->{up}{down} = $hz->{down};
                 $hz->{down}{up} = $hz->{up};
                 $hz->{top}{count} --;
-                #$SHARE->[ $hz->{row} ][ $hz->{col} ] = 0;
+                #$SHARE->[ $hz->{row} ][ $hz->{col} ] = 3;
             }
             $hz->{top}{count} --;
         }
 
-        #sleep 0.1;
+        #sleep 0.01;
     }
 
     sub resume_col
@@ -200,18 +202,19 @@ DANCING:
         $sel->{right}{left} = $sel;
         #printf "Resume: %d\n", $sel->{col};
         $SHARE->[ $sel->{row} ][ $sel->{col} ] = 1;
-
+        sleep 0.01;
         my $vt = $sel->{down};
         my $hz;
 
         for ( ; $vt != $sel; $vt = $vt->{down})
         {
             $hz = $vt->{right};
-            #$SHARE->[ $vt->{row} ][ $vt->{col} ] = 3;
+            $SHARE->[ $vt->{row} ][ $vt->{col} ] = 1;
+            sleep 0.01;
             for (  ; $hz != $vt; $hz = $hz->{right})
             {
-                #$SHARE->[ $hz->{row} ][ $hz->{col} ] = 3;
-                #sleep 0.01;
+                $SHARE->[ $hz->{row} ][ $hz->{col} ] = 1;
+                sleep 0.01;
                 $hz->{up}{down} = $hz;
                 $hz->{down}{up} = $hz;
                 $hz->{top}{count} ++;
