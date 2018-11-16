@@ -28,7 +28,7 @@ BEGIN
     our @color_table = (
             [0.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.5, 0.8, 1.0],
             [0.0, 1.0, 1.0], [0.5, 1.0, 0.5], [1.0, 0.5, 0.5],
-            [0.5, 0.5, 1.0], [0.3, 0.5, 0.8], [0.5, 0.3, 0.8],
+            [0.0, 0.5, 1.0], [0.3, 0.5, 0.8], [0.5, 0.3, 0.8],
             [0.8, 0.5, 0.3],
         );
     #our $C = [ map { {} } ( 0.. $mat_cols ) ];
@@ -51,6 +51,7 @@ our $mat_cols = 20;
 make_mat( \$mat, $mat_rows, $mat_cols );
 DancingLinks::init( $mat, $mat_rows, $mat_cols  );
 
+our $delay :shared;
 our @answer :shared; # = map { {} } (1..20);
 our $C = clone( $DancingLinks::C );
 our $SHARE :shared;
@@ -59,7 +60,7 @@ clone_DLX( $C->[0], $SHARE );
 #grep { printf "%s\n", join( "", @$_ ) } @$SHARE;
 
 #exit;
-
+$delay = 0.05;
 DancingLinks::print_links( $C->[0] );
 our $th = threads->create( \&dance, $C->[0], \@answer, 0 );
 $th->detach();
@@ -74,7 +75,8 @@ sub make_mat
     $RandMatrix::m = $cols;
     RandMatrix::create_mat( $ref );
     RandMatrix::fill_rand_row( $$ref, $rows - $RandMatrix::n );
-    RandMatrix::dump_mat( $$ref );
+    #RandMatrix::dump_mat( $$ref );
+    RandMatrix::show_answer_row();
 }
 
 DANCING:
@@ -102,12 +104,11 @@ DANCING:
     {
         our $SHARE;
         my ($head, $answer, $lv) = @_;
-
         return 1 if ( $head->{right} == $head );
 
         my $c = $head->{right};
+=opt
         my $min = $c;
-=no opt
         #get minimal column node
         while ( $c != $head )
         {
@@ -125,6 +126,7 @@ DANCING:
         my $res = 0;
         printf "Remove: %d\n", $c->{col};
         remove_col( $c );
+        #sleep 0.5;
 
         while ( $r != $c )
         {
@@ -140,10 +142,17 @@ DANCING:
             if ( $res == 1)
             {
                 $answer->[$lv] = shared_clone($r);
+
+                my $tc = $r;
+                do {
+                    $SHARE->[ $tc->{row} ][ $tc->{col} ] = 5;
+                    $tc = $tc->{right};
+                } until ( $tc == $r );
+
                 return 1;
             }
 
-            sleep 0.1;
+            sleep $delay;
             $ele = $r->{left};
             while ( $ele != $r )
             {
@@ -166,8 +175,8 @@ DANCING:
         my ( $sel ) = @_;
 
         #printf "Remove: %d\n", $sel->{col};
-        $SHARE->[ $sel->{row} ][ $sel->{col} ] = 5;
-        sleep 0.01;
+        $SHARE->[ $sel->{row} ][ $sel->{col} ] = 6;
+        sleep $delay;
         $sel->{left}{right} = $sel->{right};
         $sel->{right}{left} = $sel->{left};
 
@@ -176,22 +185,22 @@ DANCING:
 
         for ( ; $vt != $sel; $vt = $vt->{down} )
         {
+            $SHARE->[ $vt->{row} ][ $vt->{col} ] = 2;
+            sleep $delay;
             $hz = $vt->{right};
-            $SHARE->[ $vt->{row} ][ $vt->{col} ] = 5;
-            sleep 0.01;
             for (  ; $hz != $vt; $hz = $hz->{right})
             {
-                $SHARE->[ $hz->{row} ][ $hz->{col} ] = 5;
-                sleep 0.01;
+                $SHARE->[ $hz->{row} ][ $hz->{col} ] = 2;
+                sleep $delay;
                 $hz->{up}{down} = $hz->{down};
                 $hz->{down}{up} = $hz->{up};
                 $hz->{top}{count} --;
-                #$SHARE->[ $hz->{row} ][ $hz->{col} ] = 3;
+                #$SHARE->[ $hz->{row} ][ $hz->{col} ] = 0;
             }
             $hz->{top}{count} --;
         }
 
-        #sleep 0.01;
+        #sleep $delay;
     }
 
     sub resume_col
@@ -202,7 +211,7 @@ DANCING:
         $sel->{right}{left} = $sel;
         #printf "Resume: %d\n", $sel->{col};
         $SHARE->[ $sel->{row} ][ $sel->{col} ] = 1;
-        sleep 0.01;
+        sleep $delay;
         my $vt = $sel->{down};
         my $hz;
 
@@ -210,11 +219,11 @@ DANCING:
         {
             $hz = $vt->{right};
             $SHARE->[ $vt->{row} ][ $vt->{col} ] = 1;
-            sleep 0.01;
+            sleep $delay;
             for (  ; $hz != $vt; $hz = $hz->{right})
             {
                 $SHARE->[ $hz->{row} ][ $hz->{col} ] = 1;
-                sleep 0.01;
+                sleep $delay;
                 $hz->{up}{down} = $hz;
                 $hz->{down}{up} = $hz;
                 $hz->{top}{count} ++;
@@ -229,6 +238,8 @@ sub display
     our ($C, @color_table, $WinID, $SHARE);
     glColor3f(1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    print_color_table();
 
     glBegin(GL_POINTS);
     for my $r ( 0 .. $mat_rows )
@@ -246,6 +257,24 @@ sub display
 
     glutSwapBuffers();
 }
+
+sub print_color_table
+{
+    our @color_table;
+    my $pt_size = glGetFloatv_p(GL_POINT_SIZE);
+    my $block = $pt_size + 5.0;
+    my $y = 30.0;
+    glColor3f( 0.5, 0.5, 0.5 );
+    glRectf(-$block, $y - $block , scalar(@color_table)*$block, $y + $block );
+    glBegin(GL_POINTS);
+    for my $id ( 0 .. $#color_table )
+    {
+        glColor3f( @{$color_table[ $id ]} );
+        glVertex3f( $id * $block, 30.0, 0.0 );
+    }
+    glEnd();
+}
+
 
 sub idle 
 {
