@@ -6,6 +6,7 @@ use List::Util qw/shuffle sum/;
 
 our $n = 8;    #有效行
 our $m = 30;   #列
+my @insert;
 
 sub fill_rand_row
 {
@@ -13,8 +14,17 @@ sub fill_rand_row
     for my $iter ( 1.. $insert )
     {
         my $row = rand( 5 );  #控制在前5行
+        push @insert, $row;
         splice @$mat, $row, 0, [map { int(rand(2)) } (1..$m) ];
     }
+}
+
+sub show_answer_row
+{
+    my @arr = (1) x $n;
+    grep { splice @arr, $_, 0, 0 } ( @insert );
+    grep { printf "%d,", $_+1 if $arr[$_] == 1 } ( 0 .. $#arr );
+    printf "\n";
 }
 
 sub create_mat
