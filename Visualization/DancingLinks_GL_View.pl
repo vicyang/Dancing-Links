@@ -107,6 +107,19 @@ DANCING:
         }
     }
 
+    sub clean_color
+    {
+        our ($SHARE, $mat_rows, $mat_cols);
+        for my $r ( 0 .. $mat_rows ) {
+            for my $c ( 0 .. $mat_cols ) {
+                if ( $SHARE->[$r][$c] ne "green"  ) {
+                    $SHARE->[$r][$c] = "black";
+                }
+            }
+        }
+    }
+
+
     sub dance
     {
         our $SHARE;
@@ -143,21 +156,23 @@ DANCING:
                 printf "Remove: %d\n", $ele->{col};
                 remove_col( $ele->{top}, "orange" );
                 $ele = $ele->{right};
-                sleep $T2;
             }
 
             # Clean 
+            sleep $T2;
+            clean_color();
+            sleep $T2;
 
             $res = dance($head, $answer, $lv+1);
             if ( $res == 1)
             {
                 $answer->[$lv] = shared_clone($r);
 
-                my $tc = $r;
-                do {
-                    $SHARE->[ $tc->{row} ][ $tc->{col} ] = "green";
-                    $tc = $tc->{right};
-                } until ( $tc == $r );
+                # my $tc = $r;
+                # do {
+                #     $SHARE->[ $tc->{row} ][ $tc->{col} ] = "green";
+                #     $tc = $tc->{right};
+                # } until ( $tc == $r );
 
                 return 1;
             }
