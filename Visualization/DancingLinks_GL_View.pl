@@ -17,6 +17,7 @@ $Data::Dumper::Maxdepth = 2;
 use threads;
 use threads::shared;
 use ImagerFont;
+use FontCanvas;
 STDOUT->autoflush(1);
 
 BEGIN
@@ -57,6 +58,13 @@ INIT
         ImagerFont::get_text_map( $s , $TEXT_DATA{$s} );
         #printf "%d %d\n", $TEXT_DATA{$s}->{h}, $TEXT_DATA{$s}->{w};
     }
+
+    # 字幕画布
+    our $canvas :shared;
+    $canvas = shared_clone( {'w'=>undef, 'h'=>undef, 'rasters'=>undef } );
+
+    $FontCanvas::SIZE = 26;
+    FontCanvas::init( $canvas );
 }
 
 our $mat = [
@@ -150,7 +158,7 @@ DANCING:
 
     sub dance
     {
-        our $SHARE;
+        our ($SHARE, $canvas);
         my ($head, $answer, $lv) = @_;
         return 1 if ( $head->{right} == $head );
 
@@ -210,7 +218,10 @@ DANCING:
             }
 
             # Code for Analyse #
-            else { printf "\tExclude Row: %d\n", $r->{row}; }
+            else {
+                FontCanvas::update_text("abc", $canvas);
+                printf "\tExclude Row: %d\n", $r->{row};
+            }
             # ---------------- #
 
             sleep $T1;
@@ -295,6 +306,8 @@ DANCING:
 sub display
 {
     our ($C, %color_table, $WinID, $SHARE, $PT_SIZE, $PT_SPACE, %TEXT_DATA);
+    our ($canvas);
+
     glColor3f(1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -330,6 +343,12 @@ sub display
         glDrawPixels_c( $ref->{w}, $ref->{h}, GL_RGBA, GL_UNSIGNED_BYTE, $ref->{array}->ptr() );
     }
 
+    # 字幕
+    glRasterPos3f( 320.0,-380.0, 0.0 );
+
+    my $tarray = OpenGL::Array->new( scalar( @{$canvas->{rasters}} ), GL_UNSIGNED_BYTE ); 
+    $tarray->assign(0, @{$canvas->{rasters}});
+    glDrawPixels_c( $canvas->{w}, $canvas->{h}, GL_RGBA, GL_UNSIGNED_BYTE, $tarray->ptr() );
 
     glutSwapBuffers();
 }
