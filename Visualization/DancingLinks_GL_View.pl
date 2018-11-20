@@ -64,6 +64,7 @@ our $mat = [
         [0,1,0,0,0,0,1],
         [0,0,0,1,1,0,1]
     ];
+
 our $mat_rows = scalar( @$mat );
 our $mat_cols = scalar( @{$mat->[0]} );
 
@@ -83,7 +84,7 @@ clone_DLX( $C->[0], $SHARE );
 #exit;
 
 $T1 = 0.2;
-$T2 = 0.5;
+$T2 = 1.0;
 DancingLinks::print_links( $C->[0] );
 our $th = threads->create( \&dance, $C->[0], \@answer, 0 );
 $th->detach();
@@ -101,6 +102,13 @@ sub make_mat
     #RandMatrix::dump_mat( $$ref );
     RandMatrix::show_answer_row();
 }
+
+=flow
+    Dance 操作流程
+    * 从 $c->[0] 往右第一列开始，获取该列下方的包含有效单元的行 @R
+    * 在 @R 中任选一行，消除对应行标，因为这里有多行，一般涉及更多的列，将这些列下方有交集行也消除。
+    
+=cut
 
 DANCING:
 {
@@ -160,23 +168,33 @@ DANCING:
 
         my @count_array;
         my $res = 0;
-        printf "Remove: %d\n", $c->{col};
         remove_col( $c, "blue" );
         sleep $T2;
 
+        # 为了分析过程添加的代码段 begin #
+        my $tmpr = $c->{down};
+        my @possible_row;
+        while ( $tmpr != $c )
+        {
+            push @possible_row, $tmpr->{row};
+            $tmpr = $tmpr->{down};
+        }
+
+        # 为了分析过程添加的代码段 end #
+
         while ( $r != $c )
         {
+            printf "\tPossible Row: %s, Select: %d\n", join(",", @possible_row), $r->{row};
             $ele = $r->{right};
             while ( $ele != $r )
             {
-                printf "Remove: %d\n", $ele->{col};
                 remove_col( $ele->{top}, "orange" );
                 $ele = $ele->{right};
             }
 
-            # Clean 
+            # 清理已经处理过的单元
             sleep $T2;
-            clean_color();
+            clean_color();  
             sleep $T2;
 
             $res = dance($head, $answer, $lv+1);
@@ -192,12 +210,15 @@ DANCING:
 
                 return 1;
             }
+            else
+            {
+                printf "\t       Row: %d is wrong\n", $r->{row};
+            }
 
             sleep $T1;
             $ele = $r->{left};
             while ( $ele != $r )
             {
-                printf "Resume: %d\n", $ele->{col};
                 resume_col( $ele->{top}, "green" );
                 $ele = $ele->{left};
             }
@@ -205,7 +226,6 @@ DANCING:
             $r = $r->{down};
         }
 
-        printf "Resume: %d\n", $c->{col};
         resume_col( $c, "green" );
         return $res;
     }
@@ -215,7 +235,6 @@ DANCING:
         our $SHARE;
         my ( $sel, $color ) = @_;
 
-        #printf "Remove: %d\n", $sel->{col};
         $SHARE->[ $sel->{row} ][ $sel->{col} ] = "voilet";
         sleep $T1;
         $sel->{left}{right} = $sel->{right};
@@ -226,6 +245,7 @@ DANCING:
 
         for ( ; $vt != $sel; $vt = $vt->{down} )
         {
+            printf "Remove: %d\n", $vt->{row};
             $SHARE->[ $vt->{row} ][ $vt->{col} ] = $color;
             sleep $T1;
             $hz = $vt->{right};
@@ -257,6 +277,7 @@ DANCING:
 
         for ( ; $vt != $sel; $vt = $vt->{down})
         {
+            printf "Resume: %d\n", $vt->{row};
             $hz = $vt->{right};
             $SHARE->[ $vt->{row} ][ $vt->{col} ] = $color;
             sleep $T1;
