@@ -4,7 +4,6 @@
     https://zhuanlan.zhihu.com/PerlExample
 =cut
 
-use strict;
 #use warnings; # Can't locate package GLUquadricObjPtr for @OpenGL::Quad::ISA 
 use feature 'state';
 use Clone 'clone';
@@ -30,7 +29,10 @@ BEGIN
            green  => [0.5, 0.8, 0.2],
            blue   => [0.5, 0.8, 1.0],
            voilet => [0.6, 0.4, 0.9], 
-           orange => [1.0, 0.6, 0.0]
+           orange => [1.0, 0.6, 0.0],
+           Turquoise => [0.7, 0.9, 0.9],
+           AntiqueWhite => [1.0, 0.9, 0.8],
+           beige => [1.0, 1.0, 0.9],
         );
 
     our $PT_SIZE = 30;
@@ -68,8 +70,8 @@ our $mat = [
 our $mat_rows = scalar( @$mat );
 our $mat_cols = scalar( @{$mat->[0]} );
 
-# $mat_rows = 10;
-# $mat_cols = 12;
+# $mat_rows = 12;
+# $mat_cols = 10;
 # make_mat( \$mat, $mat_rows, $mat_cols );
 DancingLinks::init( $mat, $mat_rows, $mat_cols  );
 
@@ -78,13 +80,15 @@ our $T2 :shared;
 our @answer :shared; # = map { {} } (1..20);
 our $C = clone( $DancingLinks::C );
 our $SHARE :shared;
-$SHARE = shared_clone( [ map { [map { 0 } (0..$mat_cols)] } (0..$mat_rows) ] );
+
+#  用于展示的矩阵，初始化为 undef
+$SHARE = shared_clone( [ map { [map { undef } (0..$mat_cols)] } (0..$mat_rows) ] );
 clone_DLX( $C->[0], $SHARE );
 #grep { printf "%s\n", join( "", @$_ ) } @$SHARE;
 #exit;
 
-$T1 = 0.2;
-$T2 = 1.0;
+$T1 = 0.1;
+$T2 = 0.2;
 DancingLinks::print_links( $C->[0] );
 our $th = threads->create( \&dance, $C->[0], \@answer, 0 );
 $th->detach();
@@ -94,7 +98,7 @@ sub make_mat
 {
     my ($ref, $rows, $cols) = @_;
     #srand(1); # dancing long time, rows=50 cols=20
-    srand(1);
+    srand(2);
     $RandMatrix::n = 8;     #实际有效的行数
     $RandMatrix::m = $cols;
     RandMatrix::create_mat( $ref );
@@ -136,7 +140,7 @@ DANCING:
         our ($SHARE, $mat_rows, $mat_cols);
         for my $r ( 0 .. $mat_rows ) {
             for my $c ( 0 .. $mat_cols ) {
-                if ( $SHARE->[$r][$c] ne "green"  ) {
+                if ( defined $SHARE->[$r][$c] and $SHARE->[$r][$c] ne 'green' ) {
                     $SHARE->[$r][$c] = "black";
                 }
             }
@@ -171,7 +175,7 @@ DANCING:
         remove_col( $c, "blue" );
         sleep $T2;
 
-        # 为了分析过程添加的代码段 begin #
+        # Code for Analyse #
         my $tmpr = $c->{down};
         my @possible_row;
         while ( $tmpr != $c )
@@ -179,12 +183,12 @@ DANCING:
             push @possible_row, $tmpr->{row};
             $tmpr = $tmpr->{down};
         }
-
-        # 为了分析过程添加的代码段 end #
+        # ---------------- #
 
         while ( $r != $c )
         {
-            printf "\tPossible Row: %s, Select: %d\n", join(",", @possible_row), $r->{row};
+            printf "\tStage: %d, Possible Row: %s, Select: %d\n", 
+                    $lv, join(",", @possible_row), $r->{row};
             $ele = $r->{right};
             while ( $ele != $r )
             {
@@ -201,19 +205,12 @@ DANCING:
             if ( $res == 1)
             {
                 $answer->[$lv] = shared_clone($r);
-
-                # my $tc = $r;
-                # do {
-                #     $SHARE->[ $tc->{row} ][ $tc->{col} ] = "green";
-                #     $tc = $tc->{right};
-                # } until ( $tc == $r );
-
                 return 1;
             }
-            else
-            {
-                printf "\t       Row: %d is wrong\n", $r->{row};
-            }
+
+            # Code for Analyse #
+            else { printf "\tExclude Row: %d\n", $r->{row}; }
+            # ---------------- #
 
             sleep $T1;
             $ele = $r->{left};
@@ -306,7 +303,7 @@ sub display
     {
         for my $c ( 0 .. $mat_cols )
         {
-            if ( $SHARE->[$r][$c] ne 0 )
+            if ( defined $SHARE->[$r][$c] )
             {
                 glColor3f( @{ $color_table{ $SHARE->[$r][$c] } } );
                 glVertex3f( $c * $PT_SPACE, -$r * $PT_SPACE, 0.0 );
@@ -359,10 +356,23 @@ sub idle
     state $printed = 0;
     sleep 0.05;
 
+    # 显示答案
     if ( ! $th->is_running() and $printed == 0  )
     {
         $printed = 1;
         printf "Result: %s\n", join(",", map { $_->{row} } @answer);
+
+        my %answer = map { ($_->{row}, 1) } @answer;
+        our ($SHARE, $mat_rows, $mat_cols);
+        for my $r ( 0 .. $mat_rows ) {
+            for my $c ( 0 .. $mat_cols ) {
+                if ( defined $SHARE->[$r][$c] ) {
+                    if ( exists $answer{$r} ) { $SHARE->[$r][$c] = "beige" }
+                    else { $SHARE->[$r][$c] = "green" }
+                }
+            }
+        }
+
     }
     
     glutPostRedisplay();
