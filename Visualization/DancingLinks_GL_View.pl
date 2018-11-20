@@ -19,7 +19,6 @@ use threads;
 use threads::shared;
 STDOUT->autoflush(1);
 
-
 BEGIN
 {
     our $WinID;
@@ -35,6 +34,7 @@ BEGIN
 
     our $PT_SIZE = 16;
     our $PT_SPACE = int($PT_SIZE * 1.3);
+    our $PAUSE = 0;
 
     #our $C = [ map { {} } ( 0.. $mat_cols ) ];
 }
@@ -119,7 +119,6 @@ DANCING:
         }
     }
 
-
     sub dance
     {
         our $SHARE;
@@ -177,7 +176,6 @@ DANCING:
                 return 1;
             }
 
-            sleep 1.0;
             sleep $T1;
             $ele = $r->{left};
             while ( $ele != $r )
@@ -190,8 +188,8 @@ DANCING:
             $r = $r->{down};
         }
 
-        resume_col( $c, "green" );
         printf "Resume: %d\n", $c->{col};
+        resume_col( $c, "green" );
         return $res;
     }
 
@@ -201,7 +199,7 @@ DANCING:
         my ( $sel, $color ) = @_;
 
         #printf "Remove: %d\n", $sel->{col};
-        $SHARE->[ $sel->{row} ][ $sel->{col} ] = $color;
+        $SHARE->[ $sel->{row} ][ $sel->{col} ] = "voilet";
         sleep $T1;
         $sel->{left}{right} = $sel->{right};
         $sel->{right}{left} = $sel->{left};
@@ -342,9 +340,13 @@ sub reshape
 
 sub hitkey
 {
-    our $WinID;
+    our ($WinID, $T1, $T2, $PAUSE);
     my $k = lc(chr(shift));
     if ( $k eq 'q') { quit() }
+    if ( $k eq 'p') { 
+        $PAUSE = ! $PAUSE;
+        #if ($PAUSE) { }
+    }
 }
 
 sub quit
