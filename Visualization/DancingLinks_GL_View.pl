@@ -17,6 +17,7 @@ use Data::Dumper;
 $Data::Dumper::Maxdepth = 2;
 use threads;
 use threads::shared;
+use ImagerFont;
 STDOUT->autoflush(1);
 
 BEGIN
@@ -26,17 +27,33 @@ BEGIN
     our $WIDTH  = 1000;
     our %color_table = (
            black  => [0.0, 0.0, 0.0],
-           green  => [0.8, 1.0, 0.4],
+           green  => [0.5, 0.8, 0.2],
            blue   => [0.5, 0.8, 1.0],
            voilet => [0.6, 0.4, 0.9], 
            orange => [1.0, 0.6, 0.0]
         );
 
-    our $PT_SIZE = 16;
+    our $PT_SIZE = 30;
     our $PT_SPACE = int($PT_SIZE * 1.3);
     our $PAUSE = 0;
 
     #our $C = [ map { {} } ( 0.. $mat_cols ) ];
+}
+
+INIT
+{
+    our ($PT_SIZE);
+    $ImagerFont::SIZE = $PT_SIZE*0.5;
+
+    our @TEXT = map { ("C$_", "R$_") } ( 0 .. 20 );
+    our %TEXT_DATA;
+
+    for my $s ( @TEXT )
+    {
+        $TEXT_DATA{$s} = {};
+        ImagerFont::get_text_map( $s , $TEXT_DATA{$s} );
+        #printf "%d %d\n", $TEXT_DATA{$s}->{h}, $TEXT_DATA{$s}->{w};
+    }
 }
 
 our $mat = [
@@ -50,9 +67,8 @@ our $mat = [
 our $mat_rows = scalar( @$mat );
 our $mat_cols = scalar( @{$mat->[0]} );
 
-# our $mat;
-# our $mat_rows = 20;
-# our $mat_cols = 20;
+# $mat_rows = 10;
+# $mat_cols = 12;
 # make_mat( \$mat, $mat_rows, $mat_cols );
 DancingLinks::init( $mat, $mat_rows, $mat_cols  );
 
@@ -64,10 +80,10 @@ our $SHARE :shared;
 $SHARE = shared_clone( [ map { [map { 0 } (0..$mat_cols)] } (0..$mat_rows) ] );
 clone_DLX( $C->[0], $SHARE );
 #grep { printf "%s\n", join( "", @$_ ) } @$SHARE;
-
 #exit;
-$T1 = 0.05;
-$T2 = 2.0;
+
+$T1 = 0.2;
+$T2 = 0.5;
 DancingLinks::print_links( $C->[0] );
 our $th = threads->create( \&dance, $C->[0], \@answer, 0 );
 $th->detach();
@@ -126,16 +142,17 @@ DANCING:
         return 1 if ( $head->{right} == $head );
 
         my $c = $head->{right};
-=opt
-        my $min = $c;
-        #get minimal column node
-        while ( $c != $head )
-        {
-            if ( $c->{count} < $min->{count} ) { $min = $c; }
-            $c = $c->{right};
-        }
-        $c = $min;
-=cut
+
+        # # opt
+        # my $min = $c;
+        # #get minimal column node
+        # while ( $c != $head )
+        # {
+        #     if ( $c->{count} < $min->{count} ) { $min = $c; }
+        #     $c = $c->{right};
+        # }
+        # $c = $min;
+
         return 0 if ( $c->{count} <= 0 );
 
         my $r = $c->{down};
@@ -258,12 +275,11 @@ DANCING:
 
 sub display
 {
-    our ($C, %color_table, $WinID, $SHARE, $PT_SIZE, $PT_SPACE);
+    our ($C, %color_table, $WinID, $SHARE, $PT_SIZE, $PT_SPACE, %TEXT_DATA);
     glColor3f(1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     #print_color_table();
-
     glBegin(GL_POINTS);
     for my $r ( 0 .. $mat_rows )
     {
@@ -277,6 +293,24 @@ sub display
         }
     }
     glEnd();
+
+    # 列标编号
+    for my $c ( 1 .. $mat_cols )
+    {
+        next if $SHARE->[0][$c] eq 'black';
+        my $ref = $TEXT_DATA{ "C$c" };
+        glRasterPos3f( $c * $PT_SPACE - $PT_SIZE/2.0, -$PT_SIZE/2.0 + ($PT_SPACE-$PT_SIZE)/2.0, 0.0 );
+        glDrawPixels_c( $ref->{w}, $ref->{h}, GL_RGBA, GL_UNSIGNED_BYTE, $ref->{array}->ptr() );
+    }
+    
+    # 行编号
+    for my $r ( 1 .. $mat_rows )
+    {
+        my $ref = $TEXT_DATA{"R$r"};
+        glRasterPos3f( -10.0, -($r * $PT_SPACE+$PT_SIZE/4.0), 0.0 );
+        glDrawPixels_c( $ref->{w}, $ref->{h}, GL_RGBA, GL_UNSIGNED_BYTE, $ref->{array}->ptr() );
+    }
+
 
     glutSwapBuffers();
 }
@@ -298,7 +332,6 @@ sub print_color_table
     glEnd();
 }
 
-
 sub idle 
 {
     our ($th);
@@ -319,6 +352,8 @@ sub init
     our $PT_SIZE;
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glPointSize( $PT_SIZE );
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 sub reshape
