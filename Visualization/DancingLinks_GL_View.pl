@@ -33,6 +33,7 @@ BEGIN
            Turquoise => [0.7, 0.9, 0.9],
            AntiqueWhite => [1.0, 0.9, 0.8],
            beige => [1.0, 1.0, 0.9],
+           gray => [0.3, 0.3, 0.3],
         );
 
     our $PT_SIZE = 30;
@@ -88,7 +89,7 @@ clone_DLX( $C->[0], $SHARE );
 #exit;
 
 $T1 = 0.1;
-$T2 = 0.2;
+$T2 = 0.5;
 DancingLinks::print_links( $C->[0] );
 our $th = threads->create( \&dance, $C->[0], \@answer, 0 );
 $th->detach();
