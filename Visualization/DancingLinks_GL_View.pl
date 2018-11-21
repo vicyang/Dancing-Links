@@ -215,19 +215,16 @@ DANCING:
             # 清理已经处理过的单元
             clean_color();
             sleep $T2;
-
             $res = dance($head, $answer, $lv+1);
-            # 返回时恢复显示矩阵
-            clone_DLX( $C->[0], $SHARE );
 
             if ( $res == 1)
             {
                 $answer->[$lv] = shared_clone($r);
                 return 1;
             }
-
             # Code for Analyse #
             else {
+                #grep { $SHARE->[$r->{row}][$_] = "green" if defined $SHARE->[$r->{row}][$_]  } ( 1..$mat_cols );
                 $cv_str = sprintf "%sExclude Row: %d", "    "x$lv, $r->{row};
                 printf "%s\n", $cv_str;
             }
