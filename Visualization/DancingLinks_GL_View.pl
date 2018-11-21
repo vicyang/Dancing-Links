@@ -203,7 +203,8 @@ DANCING:
             $cv_str = sprintf "%sPossible Rows: (%s), try row: %d", 
                                "    "x$lv, join(",", @possible_row), $r->{row};
             printf "%s\n", $cv_str;
-
+            #grep { $SHARE->[$r->{row}][$_] = "green" if defined $SHARE->[$r->{row}][$_]  } ( 1..$mat_cols );
+            
             $ele = $r->{right};
             while ( $ele != $r )
             {
@@ -212,11 +213,13 @@ DANCING:
             }
 
             # 清理已经处理过的单元
-            sleep $T2;
-            clean_color();  
+            clean_color();
             sleep $T2;
 
             $res = dance($head, $answer, $lv+1);
+            # 返回时恢复显示矩阵
+            clone_DLX( $C->[0], $SHARE );
+
             if ( $res == 1)
             {
                 $answer->[$lv] = shared_clone($r);
@@ -230,7 +233,6 @@ DANCING:
             }
             # ---------------- #
 
-            sleep $T1;
             $ele = $r->{left};
             while ( $ele != $r )
             {
