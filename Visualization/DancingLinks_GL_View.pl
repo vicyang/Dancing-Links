@@ -48,7 +48,10 @@ INIT
 {
     our ($PT_SIZE);
     $ImagerFont::SIZE = $PT_SIZE*0.5;
+    $ImagerFont::w = $PT_SIZE;
+    $ImagerFont::h = $PT_SIZE;
 
+    # 创建标签字符模板
     our @TEXT = map { ("C$_", "R$_") } ( 0 .. 20 );
     our %TEXT_DATA;
 
@@ -203,6 +206,7 @@ DANCING:
             $cv_str = sprintf "%sPossible Rows: (%s), try row: %d", 
                                "    "x$lv, join(",", @possible_row), $r->{row};
             printf "%s\n", $cv_str;
+            sleep $T1;
 
             $ele = $r->{right};
             while ( $ele != $r )
@@ -333,11 +337,11 @@ sub display
     glEnd();
 
     # 列标编号
-    for my $c ( 1 .. $mat_cols )
+    for my $c ( 0 .. $mat_cols )
     {
         next if $SHARE->[0][$c] eq 'black';
         my $ref = $TEXT_DATA{ "C$c" };
-        glRasterPos3f( $c * $PT_SPACE - $PT_SIZE/2.0, -$PT_SIZE/2.0 + ($PT_SPACE-$PT_SIZE)/2.0, 0.0 );
+        glRasterPos3f( $c * $PT_SPACE - $PT_SIZE/2.0, -$PT_SIZE/2.0, 0.0 );
         glDrawPixels_c( $ref->{w}, $ref->{h}, GL_RGBA, GL_UNSIGNED_BYTE, $ref->{array}->ptr() );
     }
     
@@ -345,7 +349,7 @@ sub display
     for my $r ( 1 .. $mat_rows )
     {
         my $ref = $TEXT_DATA{"R$r"};
-        glRasterPos3f( -10.0, -($r * $PT_SPACE+$PT_SIZE/4.0), 0.0 );
+        glRasterPos3f( -$PT_SIZE/2.0 , -($r * $PT_SPACE + $PT_SIZE/2.0), 0.0 );
         glDrawPixels_c( $ref->{w}, $ref->{h}, GL_RGBA, GL_UNSIGNED_BYTE, $ref->{array}->ptr() );
     }
 
