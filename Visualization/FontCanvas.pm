@@ -19,7 +19,7 @@ sub init
     our ($SIZE, $font, $bbox, $img);
     my ($canvas) = @_;
 
-    $font = Imager::Font->new(file  => 'C:/windows/fonts/Consola.ttf', #STXINGKA.TTF
+    $font = Imager::Font->new(file  => 'C:/windows/fonts/consola.ttf', #STXINGKA.TTF
                               size  => $SIZE );
     $bbox = $font->bounding_box( string => "a" );
     $img = Imager->new(xsize=>$w, ysize=>$h, channels=>4);
