@@ -100,8 +100,8 @@ clone_DLX( $C->[0], $SHARE );
 #grep { printf "%s\n", join( "", @$_ ) } @$SHARE;
 #exit;
 
-$T1 = 0.1;
-$T2 = 0.5;
+$T1 = 0.2;
+$T2 = 1.0;
 DancingLinks::print_links( $C->[0] );
 our $th = threads->create( \&dance, $C->[0], \@answer, 0 );
 $th->detach();
@@ -200,10 +200,9 @@ DANCING:
 
         while ( $r != $c )
         {
-            printf "\tStage: %d, Possible Row: %s, Select: %d\n", 
-                    $lv, join(",", @possible_row), $r->{row};
-            $cv_str = sprintf "%sPossible Rows: (%s), Select: %d", 
+            $cv_str = sprintf "%sPossible Rows: (%s), try row: %d", 
                                "    "x$lv, join(",", @possible_row), $r->{row};
+            printf "%s\n", $cv_str;
 
             $ele = $r->{right};
             while ( $ele != $r )
@@ -227,7 +226,7 @@ DANCING:
             # Code for Analyse #
             else {
                 $cv_str = sprintf "%sExclude Row: %d", "    "x$lv, $r->{row};
-                printf "\tExclude Row: %d\n", $r->{row};
+                printf "%s\n", $cv_str;
             }
             # ---------------- #
 
