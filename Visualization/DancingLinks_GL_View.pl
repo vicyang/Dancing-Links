@@ -97,15 +97,19 @@ our @answer :shared; # = map { {} } (1..20);
 our $C = clone( $DancingLinks::C );
 our $SHARE :shared;
 
-#  用于展示的矩阵，初始化为 undef
-$SHARE = shared_clone( [ map { [map { undef } (0..$mat_cols)] } (0..$mat_rows) ] );
-clone_DLX( $C->[0], $SHARE );
-#grep { printf "%s\n", join( "", @$_ ) } @$SHARE;
-#exit;
-
+# 两种延时间隔
 $T1 = 0.2;
-$T2 = 1.0;
+$T2 = 0.6;
+
+# 用于展示的矩阵，初始化为 undef
+$SHARE = shared_clone( [ map { [map { undef } (0..$mat_cols)] } (0..$mat_rows) ] );
+# DLX 克隆到共享矩阵 
+clone_DLX( $C->[0], $SHARE );
+
+# 打印 链表 初始状态
 DancingLinks::print_links( $C->[0] );
+
+# 创建线程
 our $th = threads->create( \&dance, $C->[0], \@answer, 0 );
 $th->detach();
 main();
@@ -122,13 +126,6 @@ sub make_mat
     #RandMatrix::dump_mat( $$ref );
     RandMatrix::show_answer_row();
 }
-
-=flow
-    Dance 操作流程
-    * 从 $c->[0] 往右第一列开始，获取该列下方的包含有效单元的行 @R
-    * 在 @R 中任选一行，消除对应行标，因为这里有多行，一般涉及更多的列，将这些列下方有交集行也消除。
-    
-=cut
 
 DANCING:
 {
@@ -157,7 +154,7 @@ DANCING:
         for my $r ( 0 .. $mat_rows ) {
             for my $c ( 0 .. $mat_cols ) {
                 if ( defined $SHARE->[$r][$c] and $SHARE->[$r][$c] ne 'green' ) {
-                    $SHARE->[$r][$c] = "black";
+                    $SHARE->[$r][$c] = "gray";
                 }
             }
         }
@@ -171,7 +168,7 @@ DANCING:
 
         my $c = $head->{right};
 
-        # # opt
+        # # 优化算法，选择下方重合元素最少的列（为了演示，暂时关闭优化）
         # my $min = $c;
         # #get minimal column node
         # while ( $c != $head )
@@ -206,7 +203,6 @@ DANCING:
             $cv_str = sprintf "%sPossible Rows: (%s), try row: %d", 
                                "    "x$lv, join(",", @possible_row), $r->{row};
             printf "%s\n", $cv_str;
-            sleep $T1;
 
             $ele = $r->{right};
             while ( $ele != $r )
