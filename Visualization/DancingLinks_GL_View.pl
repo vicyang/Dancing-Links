@@ -60,10 +60,14 @@ INIT
     }
 
     # 字幕画布
-    our $canvas :shared;
-    $canvas = shared_clone( {'w'=>undef, 'h'=>undef, 'rasters'=>undef } );
+    our $canvas;
+    our $cv_str :shared;
+    $cv_str = "";
+    $canvas = {'w'=>undef, 'h'=>undef, 'array'=>undef };
 
-    $FontCanvas::SIZE = 26;
+    $FontCanvas::SIZE = 18;
+    $FontCanvas::h = $HEIGHT - 200;
+    $FontCanvas::w = $WIDTH * 0.5;
     FontCanvas::init( $canvas );
 }
 
@@ -158,7 +162,7 @@ DANCING:
 
     sub dance
     {
-        our ($SHARE, $canvas);
+        our ($SHARE, $canvas, $cv_str);
         my ($head, $answer, $lv) = @_;
         return 1 if ( $head->{right} == $head );
 
@@ -198,6 +202,9 @@ DANCING:
         {
             printf "\tStage: %d, Possible Row: %s, Select: %d\n", 
                     $lv, join(",", @possible_row), $r->{row};
+            $cv_str = sprintf "%sPossible Rows: (%s), Select: %d", 
+                               "    "x$lv, join(",", @possible_row), $r->{row};
+
             $ele = $r->{right};
             while ( $ele != $r )
             {
@@ -219,7 +226,7 @@ DANCING:
 
             # Code for Analyse #
             else {
-                FontCanvas::update_text("abc", $canvas);
+                $cv_str = sprintf "%sExclude Row: %d", "    "x$lv, $r->{row};
                 printf "\tExclude Row: %d\n", $r->{row};
             }
             # ---------------- #
@@ -345,10 +352,7 @@ sub display
 
     # 字幕
     glRasterPos3f( 320.0,-380.0, 0.0 );
-
-    my $tarray = OpenGL::Array->new( scalar( @{$canvas->{rasters}} ), GL_UNSIGNED_BYTE ); 
-    $tarray->assign(0, @{$canvas->{rasters}});
-    glDrawPixels_c( $canvas->{w}, $canvas->{h}, GL_RGBA, GL_UNSIGNED_BYTE, $tarray->ptr() );
+    glDrawPixels_c( $canvas->{w}, $canvas->{h}, GL_RGBA, GL_UNSIGNED_BYTE, $canvas->{array}->ptr() );
 
     glutSwapBuffers();
 }
@@ -372,7 +376,7 @@ sub print_color_table
 
 sub idle 
 {
-    our ($th);
+    our ($th, $cv_str);
     state $printed = 0;
     sleep 0.05;
 
@@ -380,8 +384,10 @@ sub idle
     if ( ! $th->is_running() and $printed == 0  )
     {
         $printed = 1;
-        printf "Result: %s\n", join(",", map { $_->{row} } @answer);
+        $cv_str = sprintf "Result: %s", join(",", map { $_->{row} } @answer);
+        printf "%s\n", $cv_str;
 
+        # 更新矩阵显示
         my %answer = map { ($_->{row}, 1) } @answer;
         our ($SHARE, $mat_rows, $mat_cols);
         for my $r ( 0 .. $mat_rows ) {
@@ -392,9 +398,15 @@ sub idle
                 }
             }
         }
-
     }
     
+    # 更新画布显示文字
+    if ($cv_str ne "")
+    {
+        FontCanvas::update_text( $cv_str , $canvas);
+        $cv_str = "";
+    }
+
     glutPostRedisplay();
 }
 

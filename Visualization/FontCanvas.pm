@@ -8,10 +8,11 @@ use threads::shared;
 our $SIZE = 20;
 our $font;
 our $bbox;
-our $img :shared;
+our $img;
 our $ybase = 0.0;
-our $h;
-our $w;
+our $xbase = 10.0;  # 向右偏移
+our $h = 400;
+our $w = 400;
 
 sub init
 {
@@ -21,11 +22,8 @@ sub init
     $font = Imager::Font->new(file  => 'C:/windows/fonts/Consola.ttf', #STXINGKA.TTF
                               size  => $SIZE );
     $bbox = $font->bounding_box( string => "a" );
-    $img = shared_clone(Imager->new(xsize=>400, ysize=>400, channels=>4));
+    $img = Imager->new(xsize=>$w, ysize=>$h, channels=>4);
     $ybase = 0.0;
-
-    $h = $img->getheight();
-    $w = $img->getwidth();
 
     # 填充画布背景色
     $img->box(xmin => 0, ymin => 0, xmax => $w, ymax => $h,
@@ -41,29 +39,27 @@ sub init
 
     $canvas->{w} = $w;
     $canvas->{h} = $h;
-    $canvas->{rasters} = shared_clone( \@rasters );
-    printf "init %s\n", $img;
+    $canvas->{array} = OpenGL::Array->new( scalar(@rasters), GL_UNSIGNED_BYTE );
+    $canvas->{array}->assign(0, @rasters);
 }
 
 sub update_text
 {
-    our ($font, $SIZE, $img, $ybase, $bbox);
+    our ($font, $SIZE, $img, $xbase, $ybase, $bbox);
     our ($h, $w);
     my ( $string, $canvas ) = @_;
 
-    $ybase += $bbox->font_height;
+    $ybase += $bbox->font_height + 2.0;
 
     $img->string(
                font  => $font,
                text  => $string,
-               x     => 0,
+               x     => $xbase,
                y     => $ybase,
                size  => $SIZE,
                color => 'gold',
                aa    => 1,     # anti-alias
             );
-
-    printf "update %s\n", $img;
     
     my @rasters;
     my @colors;
@@ -73,8 +69,8 @@ sub update_text
         grep { push @rasters, $_->rgba  } @colors;
     }
 
-    $canvas->{rasters} = shared_clone( \@rasters );
-    printf "update: %d %d %d\n", $#{$canvas->{rasters}}, $#rasters, $#colors;
+    $canvas->{array} = OpenGL::Array->new( scalar(@rasters), GL_UNSIGNED_BYTE );
+    $canvas->{array}->assign(0, @rasters);
 }
 
 1;
