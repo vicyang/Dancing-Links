@@ -2,9 +2,6 @@
   动态演示：   
   ![](DancingLinks_Visual.gif)   
 
-  过程：   
+  添加文字描述：   
   ![](DancingLinks_Visual.png)    
-
-
-  
 
